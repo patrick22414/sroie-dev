@@ -18,12 +18,14 @@ def train_line(model, args):
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 2000)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 100, gamma=0.99)
 
     avg_loss = 0
     loss_history = numpy.zeros(args.max_epoch)
-    loss_history_file = "loss_history/{}.txt".format(datetime.now().strftime("LINE-%Y%m%d-%H%M"))
-    os.makedirs("loss_history/", exist_ok=True)
+    loss_history_file = "loss_history_line/{}.txt".format(datetime.now().strftime("%Y%m%d-%H%M"))
+    saves_folder = "saves_line/MODEL-{}".format(datetime.now().strftime("%Y%m%d-%H%M"))
+    os.makedirs("loss_history_line/", exist_ok=True)
+    os.makedirs("saves_line/", exist_ok=True)
 
     for epoch in range(1, args.max_epoch + 1):
         start = time.time()
@@ -66,6 +68,10 @@ def train_line(model, args):
             print("NOTE: Loss history available at {}".format(loss_history_file))
 
         if args.eval_per != 0 and epoch % args.eval_per == 0:
+            save_file = saves_folder + "-{:04d}.pth".format(epoch)
+            torch.save(model.state_dict(), save_file)
+            print("NOTE: Model state dict available at {}".format(save_file))
+
             with torch.no_grad():
                 dirname = "results_line/eval_{}/".format(epoch)
                 os.makedirs(dirname, exist_ok=True)
@@ -89,7 +95,7 @@ def train_line(model, args):
                 model.train()
 
 
-def train2(model, args):
+def train_grid(model, args):
     model.to(args.device)
     model.train()
 
@@ -148,6 +154,7 @@ def train2(model, args):
         if args.eval_per != 0 and epoch % args.eval_per == 0:
             torch.save(model.state_dict(), save_file + "-{:04d}.pth".format(epoch))
             print("NOTE: Model state dict available at {}".format(save_file))
+
             with torch.no_grad():
                 dirname = "results/eval_{:04d}/".format(epoch)
                 os.makedirs(dirname, exist_ok=True)
@@ -182,8 +189,8 @@ def main():
     args = parser.parse_args()
     args.device = torch.device(args.device)
 
-    model = GridModel()
-    train2(model, args)
+    model = LineModel()
+    train_line(model, args)
 
 
 if __name__ == "__main__":

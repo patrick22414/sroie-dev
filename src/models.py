@@ -14,19 +14,19 @@ class LineModel(torch.nn.Module):
         super().__init__()
         self.feature_extractor = torch.nn.Sequential(
             # 3 x 768 x 384
-            Conv(3, 12, 3, padding=1),
+            Conv(3, 12, 5, padding=2),
             # 12 x 768 x 384
             Residual(12),
-            ResidualReduce(12, 24, 3, padding=1),
+            ResidualReduce(12, 24),
             # 24 x 384 x 192
             Residual(24),
-            ResidualReduce(24, 48, 3, padding=1),
+            ResidualReduce(24, 48),
             # 48 x 192 x 96
             Residual(48),
-            ResidualReduce(48, 96, 3, padding=1),
+            ResidualReduce(48, 96),
             # 96 x 96 x 48
             Residual(96),
-            ResidualReduce(96, 192, 3, padding=1),
+            ResidualReduce(96, 192),
             # 192 x 48 x 24
         )
         self.line_detector = torch.nn.Sequential(
@@ -41,15 +41,19 @@ class LineModel(torch.nn.Module):
             # 3 x 48 x 1
         )
 
-    def forward(self, input):
-        features = self.feature_extractor(input)
+    def forward(self, inpt):
+        features = self.feature_extractor(inpt)
 
         lines = self.line_detector(features).squeeze(dim=3)
-        conf = lines[:, 0, :] if self.training else torch.sigmoid(lines[:, 0, :])
-        offset = torch.nn.functional.softsign(lines[:, 1, :])
-        scale = torch.nn.functional.softplus(lines[:, 2, :])
 
-        return torch.stack((conf, offset, scale), dim=2)
+        if self.training:
+            confidence = lines[:, 0, :]
+        else:
+            confidence = torch.sigmoid(lines[:, 0, :])
+        offset = torch.nn.functional.softsign(lines[:, 1, :])
+        scaling = torch.nn.functional.softplus(lines[:, 2, :])
+
+        return torch.stack([confidence, offset, scaling], dim=2)
 
 
 class GridModel(torch.nn.Module):
@@ -148,7 +152,7 @@ class Conv(torch.nn.Module):
 if __name__ == "__main__":
     numpy.set_printoptions(precision=2, suppress=True)
 
-    model = GridModel()
+    model = LineModel()
     model.train()
 
     data = torch.randn(2, 3, RESO_H, RESO_W)
