@@ -59,7 +59,7 @@ def get_train_data_grid(batch_size, device):
 
 
 def get_eval_data(batch_size, device):
-    jpg_files = random.sample(glob.glob(DATA_PATH + "*.jpg"), batch_size)
+    jpg_files = random.sample(glob.glob(DATA_PATH + "val/*.jpg"), batch_size)
 
     images = [Image.open(f).convert("RGB") for f in jpg_files]
 
@@ -72,7 +72,7 @@ def get_eval_data(batch_size, device):
 
 
 def get_eval_data_grid(batch_size, device):
-    jpg_files = random.sample(glob.glob(DATA_PATH + "*.jpg"), batch_size)
+    jpg_files = random.sample(glob.glob(DATA_PATH + "val/*.jpg"), batch_size)
 
     images = [Image.open(f).convert("RGB") for f in jpg_files]
 
