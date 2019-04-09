@@ -3,7 +3,7 @@ import string
 import glob
 import os
 import pickle
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 from sys import maxsize
 
 VALID_CHARS = string.ascii_uppercase + string.digits + string.punctuation + " "
@@ -85,8 +85,10 @@ def batch_rename():
 
 
 def line_print():
-    jpg_files = [f.path for f in os.scandir("../task1/") if f.name.endswith(".jpg")]
+    jpg_files = [f.path for f in os.scandir("../sroie-data/task1/") if f.name.endswith(".jpg")]
     pck_files = [os.path.splitext(f)[0] + ".pickle" for f in jpg_files]
+
+    font = ImageFont.truetype("Inconsolata-Regular.ttf", size=12)
 
     for f_jpg, f_pck in zip(jpg_files, pck_files):
         image = Image.open(f_jpg).convert("RGB")
@@ -111,15 +113,16 @@ def line_print():
                 color = RAINBOW[color_id % len(RAINBOW)]
                 draw.line((0, line.yspan[0], image.width, line.yspan[0]), fill=color, width=1)
                 draw.line((0, line.yspan[1], image.width, line.yspan[1]), fill=color, width=2)
-                draw.text((10, line.yspan[0] + 2), "\t".join(line.text), fill=color)
+                draw.text((10, line.yspan[0] + 2), "\t".join(line.text), fill=color, font=font)
                 color_id += 1
         image.save(os.path.splitext(f_jpg)[0] + ".png")
-        
+        break
+
         print(f_jpg)
 
 
 def collect_char():
-    pck_files = [f.path for f in os.scandir("../task1/") if f.name.endswith(".pickle")]
+    pck_files = [f.path for f in os.scandir("../sroie-data/task1/") if f.name.endswith(".pickle")]
 
     collection = set()
     for f in pck_files:
@@ -135,4 +138,4 @@ def collect_char():
 
 
 if __name__ == "__main__":
-    collect_char()
+    line_print()
