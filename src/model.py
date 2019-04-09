@@ -61,30 +61,30 @@ class GridModel(torch.nn.Module):
         super().__init__()
         self.feature_extractor = torch.nn.Sequential(
             # 3 x 768 x 384
-            Conv(3, 15, 5, padding=2),
-            # 15 x 768 x 384
-            Residual(15),
-            ResidualReduce(15, 30),
-            # 30 x 384 x 192
+            Conv(3, 30, 5, padding=2),
+            # 30 x 768 x 384
             Residual(30),
             ResidualReduce(30, 60),
-            # 60 x 192 x 96
+            # 60 x 384 x 192
             Residual(60),
             ResidualReduce(60, 120),
-            # 120 x 96 x 48
+            # 120 x 192 x 96
             Residual(120),
             ResidualReduce(120, 240),
-            # 240 x 48 x 24
+            # 240 x 96 x 48
+            Residual(240),
+            ResidualReduce(240, 480),
+            # 480 x 48 x 24
         )
         self.grid_detector = torch.nn.Sequential(
-            # 240 x 48 x 24
-            Conv(240, 270, (1, 3), padding=0, groups=5),
-            # 270 x 48 x 22
-            Conv(270, 300, (1, 3), padding=0, groups=5),
-            # 300 x 48 x 20
-            torch.nn.Conv2d(300, 300, (1, 4), stride=(1, 4), groups=5),
-            # 300 x 48 x 5
-            torch.nn.Conv2d(300, 5, 1, groups=5),
+            # 480 x 48 x 24
+            Conv(480, 480, (1, 3), padding=0, groups=5),
+            # 480 x 48 x 22
+            Conv(480, 480, (1, 3), padding=0, groups=5),
+            # 480 x 48 x 20
+            torch.nn.Conv2d(480, 480, (1, 4), stride=(1, 4), groups=5),
+            # 480 x 48 x 5
+            torch.nn.Conv2d(480, 5, 1, groups=5),
             # 5 x 48 x 5
         )
 
@@ -109,8 +109,19 @@ class Residual(torch.nn.Module):
     def __init__(self, channels):
         super().__init__()
         self.conv = torch.nn.Sequential(
-            Conv(channels, channels, 3, padding=1),
-            Conv(channels, channels, 1, padding=0),
+            Conv(channels, channels, 3, padding=1), Conv(channels, channels, 1, padding=0)
+        )
+
+    def forward(self, inpt):
+        oupt = self.conv(inpt)
+        return oupt + inpt
+
+
+class ResidualOne(torch.nn.Module):
+    def __init__(self, channels):
+        super().__init__()
+        self.conv = torch.nn.Sequential(
+            Conv(channels, channels, 1, padding=0), Conv(channels, channels, 1, padding=0)
         )
 
     def forward(self, inpt):
@@ -122,12 +133,10 @@ class ResidualReduce(torch.nn.Module):
     def __init__(self, in_chan, out_chan):
         super().__init__()
         self.branch_0 = torch.nn.Sequential(
-            Conv(in_chan, out_chan, 3, padding=1, stride=2),
-            Conv(out_chan, out_chan, 1, padding=0),
+            Conv(in_chan, out_chan, 3, padding=1, stride=2), Conv(out_chan, out_chan, 1, padding=0)
         )
         self.branch_1 = torch.nn.Sequential(
-            torch.nn.MaxPool2d(2),
-            Conv(in_chan, out_chan, 1, padding=0),
+            torch.nn.MaxPool2d(2), Conv(in_chan, out_chan, 1, padding=0)
         )
 
     def forward(self, inpt):

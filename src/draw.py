@@ -1,7 +1,7 @@
 import numpy
 from PIL import Image, ImageDraw
 
-from .models import RESO_H, RESO_W, GRID_H, GRID_W
+from model import RESO_H, RESO_W, GRID_H, GRID_W
 
 
 def draw_pred_line(image, pred, threshold=None):

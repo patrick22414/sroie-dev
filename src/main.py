@@ -6,7 +6,9 @@ from datetime import datetime
 import numpy
 import torch
 
-from src import *
+from model import GridModel, LineModel
+from draw import draw_pred_grid, draw_pred_line
+from data import get_train_data, get_train_data_grid, get_eval_data, get_eval_data_grid
 
 
 def train_line(model, args):
@@ -118,7 +120,7 @@ def train_grid(model, args):
 
         optimizer.zero_grad()
 
-        data, truth = get_train_data2(args.batch_size, args.device)
+        data, truth = get_train_data_grid(args.batch_size, args.device)
         mask = truth[:, 0, :, :].byte()
 
         preds = model(data)
@@ -161,7 +163,7 @@ def train_grid(model, args):
 
                 model.eval()
 
-                eval_data, eval_images = get_eval_data2(args.batch_size, args.device)
+                eval_data, eval_images = get_eval_data_grid(args.batch_size, args.device)
                 eval_preds = model(eval_data)
 
                 if eval_preds.is_cuda:
@@ -189,8 +191,8 @@ def main():
     args = parser.parse_args()
     args.device = torch.device(args.device)
 
-    model = LineModel()
-    train_line(model, args)
+    model = GridModel()
+    train_grid(model, args)
 
 
 if __name__ == "__main__":

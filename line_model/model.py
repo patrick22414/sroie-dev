@@ -1,5 +1,4 @@
 import torch
-from torch import nn
 from torch.nn import Module
 import string
 
@@ -9,6 +8,33 @@ VALID_CHARS = "\r" + string.digits + string.ascii_uppercase + string.punctuation
 class ROIFinder(Module):
     def __init__(self):
         super().__init__()
+        self.network = torch.nn.Sequential(
+            # 1 x 256 x 256
+            Conv(1, 2, 3, padding=1),
+            torch.nn.MaxPool2d(2),
+            # 2 x 128 x 128
+            Conv(2, 4, 3, padding=1),
+            torch.nn.MaxPool2d(2),
+            # 4 x 64 x 64
+            Conv(4, 8, 3, padding=1),
+            torch.nn.MaxPool2d(2),
+            # 8 x 32 x 32
+            Conv(8, 16, 3, padding=1),
+            torch.nn.MaxPool2d(2),
+            # 16 x 16 x 16
+            Conv(16, 32, (1, 4), padding=0, stride=(1, 4), groups=4),
+            # 32 x 16 x 4
+            Conv(32, 64, (4, 1), padding=0, stride=(4, 1), groups=4),
+            # 64 x 4 x 4
+            torch.nn.Conv2d(64, 64, 4, groups=4),
+            # 64 x 1 x 1
+            torch.nn.Conv2d(64, 4, 1, groups=4),
+        )
+
+    def forward(self, inpt):
+        oupt = self.network(inpt).squeeze()
+        oupt = torch.cat((torch.tanh(oupt[:, 0:2]).mul(0.5), torch.sigmoid(oupt[:, 2:4])), dim=1)
+        return oupt
 
 
 class LineEncoder(Module):
@@ -53,8 +79,7 @@ class Residual(torch.nn.Module):
     def __init__(self, channels):
         super().__init__()
         self.conv = torch.nn.Sequential(
-            Conv(channels, channels, 3, padding=1),
-            Conv(channels, channels, 1, padding=0),
+            Conv(channels, channels, 3, padding=1), Conv(channels, channels, 1, padding=0)
         )
 
     def forward(self, inpt):
@@ -67,11 +92,11 @@ class ResidualReduce(torch.nn.Module):
         super().__init__()
         self.branch_0 = torch.nn.Sequential(
             Conv(in_chan, out_chan, 3, padding=1, stride=2),
+            #
             Conv(out_chan, out_chan, 1, padding=0),
         )
         self.branch_1 = torch.nn.Sequential(
-            torch.nn.MaxPool2d(2),
-            Conv(in_chan, out_chan, 1, padding=0),
+            torch.nn.MaxPool2d(2), Conv(in_chan, out_chan, 1, padding=0)
         )
 
     def forward(self, inpt):
@@ -94,4 +119,7 @@ class Conv(torch.nn.Module):
 
 
 if __name__ == "__main__":
-    pass
+    inpt = torch.rand(16, 1, 256, 256)
+    model = ROIFinder()
+    oupt = model(inpt)
+    print(oupt)
