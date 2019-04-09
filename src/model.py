@@ -64,15 +64,19 @@ class GridModel(torch.nn.Module):
             Conv(3, 30, 5, padding=2),
             # 30 x 768 x 384
             Residual(30),
+            ResidualOne(30),
             ResidualReduce(30, 60),
             # 60 x 384 x 192
             Residual(60),
+            ResidualOne(60),
             ResidualReduce(60, 120),
             # 120 x 192 x 96
             Residual(120),
+            ResidualOne(120),
             ResidualReduce(120, 240),
             # 240 x 96 x 48
             Residual(240),
+            ResidualOne(240),
             ResidualReduce(240, 480),
             # 480 x 48 x 24
         )
