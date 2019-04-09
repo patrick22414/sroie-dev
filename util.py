@@ -118,5 +118,21 @@ def line_print():
         print(f_jpg)
 
 
+def collect_char():
+    pck_files = [f.path for f in os.scandir("../task1/") if f.name.endswith(".pickle")]
+
+    collection = set()
+    for f in pck_files:
+        print(f)
+        with open(f, "rb") as f_opened:
+            labels = pickle.load(f_opened)
+
+        for _, text in labels:
+            collection.update(text)
+
+    print(len(collection))
+    print(collection)
+
+
 if __name__ == "__main__":
-    line_print()
+    collect_char()
