@@ -61,34 +61,44 @@ class GridModel(torch.nn.Module):
         super().__init__()
         self.feature_extractor = torch.nn.Sequential(
             # 3 x 768 x 384
-            Conv(3, 30, 5, padding=2),
-            # 30 x 768 x 384
+            Conv(3, 15, 5, padding=2),
+            # 15 x 768 x 384
+            Residual(15),
+            ResidualOne(15),
+            Residual(15),
+            ResidualOne(15),
+            ResidualReduce(15, 30),
+            # 30 x 384 x 192
+            Residual(30),
+            ResidualOne(30),
             Residual(30),
             ResidualOne(30),
             ResidualReduce(30, 60),
-            # 60 x 384 x 192
+            # 60 x 192 x 96
+            Residual(60),
+            ResidualOne(60),
             Residual(60),
             ResidualOne(60),
             ResidualReduce(60, 120),
-            # 120 x 192 x 96
+            # 120 x 96 x 48
+            Residual(120),
+            ResidualOne(120),
             Residual(120),
             ResidualOne(120),
             ResidualReduce(120, 240),
-            # 240 x 96 x 48
-            Residual(240),
-            ResidualOne(240),
-            ResidualReduce(240, 480),
-            # 480 x 48 x 24
+            # 240 x 48 x 24
         )
         self.grid_detector = torch.nn.Sequential(
-            # 480 x 48 x 24
-            Conv(480, 480, (1, 3), padding=0, groups=5),
-            # 480 x 48 x 22
-            Conv(480, 480, (1, 3), padding=0, groups=5),
-            # 480 x 48 x 20
-            torch.nn.Conv2d(480, 480, (1, 4), stride=(1, 4), groups=5),
-            # 480 x 48 x 5
-            torch.nn.Conv2d(480, 5, 1, groups=5),
+            # 240 x 48 x 24
+            Conv(240, 240, (1, 3), padding=0, groups=5),
+            Conv(240, 240, 1, padding=0, groups=5),
+            # 240 x 48 x 22
+            Conv(240, 240, (1, 3), padding=0, groups=5),
+            Conv(240, 240, 1, padding=0, groups=5),
+            # 240 x 48 x 20
+            torch.nn.Conv2d(240, 240, (1, 4), stride=(1, 4), groups=5),
+            # 240 x 48 x 5
+            torch.nn.Conv2d(240, 5, 1, groups=5),
             # 5 x 48 x 5
         )
 
