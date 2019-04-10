@@ -12,10 +12,12 @@ def transform_pred(pred, ratio, conf_thresh=0.5, iou_thresh=0.5):
     mask = conf > conf_thresh
 
     center_x = torch.stack(
-        [torch.arange(GRID_W // 2, RESO_W, GRID_W).float().to(pred.device)] * (RESO_H // GRID_H), dim=0
+        [torch.arange(GRID_W // 2, RESO_W, GRID_W).float().to(pred.device)] * (RESO_H // GRID_H),
+        dim=0,
     )
     center_y = torch.stack(
-        [torch.arange(GRID_H // 2, RESO_H, GRID_H).float().to(pred.device)] * (RESO_W // GRID_W), dim=1
+        [torch.arange(GRID_H // 2, RESO_H, GRID_H).float().to(pred.device)] * (RESO_W // GRID_W),
+        dim=1,
     )
 
     center_x = (pred[1] * GRID_W + center_x)[mask]
@@ -32,24 +34,30 @@ def transform_pred(pred, ratio, conf_thresh=0.5, iou_thresh=0.5):
             (center_x + w_half) / ratio[0],
             (center_y + h_half) / ratio[1],
         ),
-        dim = 1
+        dim=1,
     )
-    # while True:
-    conf, indices = torch.sort(conf, descending=True)
-    coor = torch.index_select(coor, 0, indices)
-    # iou_mask = calc_ious(coor[1:], coor[0]) < iou_thresh
 
-    return conf, coor
+    conf, indices = torch.sort(conf, descending=True)
+    coor = coor[indices]
+    i = 0
+    while i < len(coor) - 1:
+        coor = coor[(calc_ious(coor[i + 1 :], coor[i]) < iou_thresh).nonzero().squeeze()]
+        i += 1
+
+    return coor
 
 
 def calc_ious(boxes, box0):
-    pass
+    m = torch.max(boxes, box0).t()
+    n = torch.min(boxes, box0).t()
+    ious = ((n[2] - m[0]) * (n[3] - m[1])) / ((m[2] - n[0]) * (m[3] - n[1]))
+    return ious
 
 
 if __name__ == "__main__":
-    pred = torch.rand(5, 48, 5)
-    ratio = [0.8, 0.9]
-    conf_thresh = 0.5
-    coor = transform_pred(pred, ratio, conf_thresh)
-    for c in coor:
-        print(c)
+    x = torch.arange(5 * 2).reshape(5, 2)
+    y = torch.tensor([0, 1, 1, 0, 1])
+
+    print(x)
+    print(y.nonzero().squeeze())
+    print(x[y.nonzero().squeeze()])
