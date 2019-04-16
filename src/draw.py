@@ -29,7 +29,6 @@ def draw_pred_line(image, pred, threshold=None):
 
 
 def draw_pred_grid(image, pred, threshold=0.75):
-    # pred.shape == (5, RESO_H // GRID_H, RESO_W // GRID_W) or (5, 50, 5)
     draw = ImageDraw.Draw(image)
 
     conf = pred[0]
