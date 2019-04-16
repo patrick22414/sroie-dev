@@ -1,8 +1,8 @@
 import csv
 import glob
 import os
-import random
 import pickle
+import random
 import time
 
 import numpy
@@ -82,6 +82,27 @@ def get_eval_data_grid(batch_size, device):
         data[i] = numpy.moveaxis(numpy.array(im.resize([RESO_W, RESO_H])), 2, 0)
 
     return torch.tensor(data, device=device), images
+
+
+def get_all_eval_grid():
+    filenames = [os.path.splitext(f)[0] for f in glob.glob(DATA_PATH + "val/*.jpg")]
+    jpg_files = [s + ".jpg" for s in filenames]
+    pck_files = [s + ".pickle" for s in filenames]
+
+    images = [Image.open(f).convert("RGB") for f in jpg_files]
+
+    # convert jpg files to NCWH tensor
+    data = [torch.zeros(1, 3, RESO_H, RESO_W) for _ in range(len(images))]
+    for i, im in enumerate(images):
+        data[i][0] = torch.tensor(numpy.moveaxis(numpy.array(im.resize([RESO_W, RESO_H])), 2, 0))
+
+    truth = [None] * len(images)
+    for i, f in enumerate(pck_files):
+        with open(f, "rb") as fo:
+            labels = pickle.load(fo)
+            truth[i] = torch.FloatTensor(tuple(coor for coor, _ in labels))
+
+    return data, truth, images
 
 
 def pck_to_truth_grid(pck, ratio):
@@ -189,13 +210,17 @@ def txt_to_truth2(txt, ratio):
 
 
 if __name__ == "__main__":
-    numpy.set_printoptions(precision=2, edgeitems=10, suppress=True)
+    # numpy.set_printoptions(precision=2, edgeitems=10, suppress=True)
 
-    txt = "../data_train/001.txt"
-    jpg = "../data_train/001.jpg"
-    image = Image.open(jpg)
-    ratio = (RESO_W / image.width, RESO_H / image.height)
+    # txt = "../data_train/001.txt"
+    # jpg = "../data_train/001.jpg"
+    # image = Image.open(jpg)
+    # ratio = (RESO_W / image.width, RESO_H / image.height)
 
-    truth = txt_to_truth2(txt, ratio)
+    # truth = txt_to_truth2(txt, ratio)
 
-    print(truth)
+    # print(truth)
+
+    data, truth, ratios = get_all_eval_grid()
+    print([d.size() for d in data])
+    print([t.size() for t in truth])
