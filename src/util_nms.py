@@ -57,17 +57,45 @@ def nms_filter(confidence, coordinate, iou_thresh):
     return coor_nms[0:count]
 
 
-def calc_f1(pred, truth, iou_thresh):
+def calc_f1(pred, truth, iou_thresh=0.5):
+    """
+    arguments:
+        pred    prediction boxes as an N x 4 tensor, each row is (x0, y0, x1, y1) of a box.
+                prediction boxes are assumed to be in descending confidence, i.e. the first box has
+                the highest confidence
+        truth   truth boxes as an M x 4 tensor, each row is (x0, y0, x1, y1) of a box. the order of
+                truth boxes does not matter
+        iou_thresh  optional. the IOU required for a prediction box to be considered as 'correct'
+    
+    return:
+        f1-score, average-precision, average-recall
+
+    note:
+        this does NOT on CUDA, put things on CPU
+    """
     ious = torch.zeros(len(pred), len(truth))
     for i, pred_box in enumerate(pred):
         ious[i] = calc_ious(truth, pred_box)
     ious_max, _ = torch.max(ious, dim=1)
-    binary = (ious_max > iou_thresh).long()
-    precisions = [binary[0:i].sum().item() / (i + 1) for i in range(len(binary))]
-    precisions = [max(precisions[i:]) for i in range(len(precisions))]
-    recalls = [binary[0:i].sum().item() / len(truth) for i in range(len(binary))]
-    f1 = [2 * p * r / (p + r) for p, r in zip(precisions, recalls)]
-    return f1, precisions, recalls
+
+    hit = (ious_max > iou_thresh).long().numpy()
+    for i in range(len(hit)):
+        hit[i] = hit[0:i].sum()
+
+    precision = hit / numpy.arange(1, len(hit) + 1)
+    for i in range(len(precision)):
+        precision[i] = precision[i:].max()
+
+    recall = hit / len(truth)
+
+    # Average precision
+    ap = numpy.interp(numpy.linspace(min(recall), max(recall), 101), recall, precision).mean()
+    # Average recall
+    ar = numpy.interp(numpy.linspace(min(precision), max(precision), 101), precision, recall).mean()
+    # Average F1
+    f1 = 2 * ap * ar / (ap + ar)
+
+    return f1, ap, ar
 
 
 def calc_ious(boxes, box0):
