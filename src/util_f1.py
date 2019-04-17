@@ -26,15 +26,16 @@ def calc_f1(pred, truth, iou_thresh=0.5):
         ious[i] = calc_ious(truth, pred_box)
     ious_max, _ = torch.max(ious, dim=1)
 
-    hit = (ious_max > iou_thresh).long().numpy()
-    for i in range(len(hit)):
-        hit[i] = hit[0:i].sum()
+    hit = (ious_max > iou_thresh).numpy()
+    accum = numpy.zeros_like(hit, dtype=float)
+    for i in range(1, len(hit)):
+        accum[i] = hit[0:i].sum()
 
-    precision = hit / numpy.arange(1, len(hit) + 1)
+    precision = accum / numpy.arange(1, len(hit) + 1)
     for i in range(len(precision)):
         precision[i] = precision[i:].max()
 
-    recall = hit / len(truth)
+    recall = accum / len(truth)
 
     # Average precision
     ap = numpy.interp(numpy.linspace(min(recall), max(recall), 101), recall, precision).mean()
